@@ -1,19 +1,6 @@
 package com.johankahrstrom.expressions
 
 object Main {
-  def evaluate(e: Expression, x: Double): Double = e match {
-    case Zero => 0.0
-    case One => 1.0
-    case Constant(c) => c
-    case Variable => x
-    case Add(left, right) => evaluate(left, x) + evaluate(right, x)
-    case Negate(expr) => -evaluate(expr, x)
-    case Multiply(left, right) => evaluate(left, x) * evaluate(right, x)
-    case Divide(numerator, denominator) => evaluate(numerator, x) / evaluate(denominator, x)
-    case Sine(param) => Math.sin(evaluate(param, x))
-    case Cosine(param) => Math.cos(evaluate(param, x))
-  }
-
   def simplify(e: Expression): Expression = e match {
     case Add(left, right) => (left, right) match {
       case (Zero, expr) => simplify(expr)
@@ -52,6 +39,9 @@ object Main {
   }
 
   def main(args: Array[String]) {
+    val ex = new Cosine(Variable)
+    println(ex.derive.derive.derive.derive)
+    println(simplifier(ex.derive.derive.derive.derive))
     val e = toExpression("x * x".replaceAll(" ", ""))
     println(e.toString);
   }
