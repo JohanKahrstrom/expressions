@@ -2,18 +2,8 @@ package com.johankahrstrom.expressions
 
 object Main {
   def simplify(e: Expression): Expression = e match {
-    case Add(left, right) => (left, right) match {
-      case (Zero, expr) => simplify(expr)
-      case (expr, Zero) => simplify(expr)
-      case (left, right) => Add(simplify(left), simplify(right))
-    }
-    case Multiply(left, right) => (left, right) match {
-      case (Zero, expr) => Zero
-      case (expr, Zero) => Zero
-      case (One, expr) => simplify(expr)
-      case (expr, One) => simplify(expr)
-      case (left, right) => Multiply(simplify(left), simplify(right))
-    }
+    case a: Add => a.simplify
+    case m: Multiply => m.simplify
     case Divide(numerator, denominator) => Divide(simplify(numerator), simplify(denominator))
     case Negate(expr) => expr match {
       case Negate(innerexpr) => simplify(innerexpr)
@@ -24,7 +14,7 @@ object Main {
 
   def simplifier(e: Expression): Expression = {
     def loop(acc: Expression): Expression = {
-      val simpler = simplify(acc)
+      val simpler = acc.simplify
       if (acc == simpler) simpler
       else loop(simpler)
     }
@@ -40,9 +30,12 @@ object Main {
 
   def main(args: Array[String]) {
     val ex = new Cosine(Variable)
-    println(ex.derive.derive.derive.derive)
+    println(ex.derive.derive)
     println(simplifier(ex.derive.derive.derive.derive))
     val e = toExpression("x * x".replaceAll(" ", ""))
     println(e.toString);
+    println(ex.derive.derive.derive)
+    println(ex.derive.derive.derive.simplify)
+    println(Expression.simplify(ex.derive.derive.derive))
   }
 }
