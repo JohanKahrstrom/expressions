@@ -1,19 +1,12 @@
 package com.johankahrstrom.expressions
 
-object Main {
-  def simplify(e: Expression): Expression = e match {
-    case a: Add => a.simplify
-    case m: Multiply => m.simplify
-    case Divide(numerator, denominator) => Divide(simplify(numerator), simplify(denominator))
-    case Negate(expr) => expr match {
-      case Negate(innerexpr) => simplify(innerexpr)
-      case other => Negate(simplify(expr))
-    }
-    case expr => expr
-  }
+import scala.annotation.tailrec
 
-  def simplifier(e: Expression): Expression = {
-    def loop(acc: Expression): Expression = {
+object Main {
+  type Exp = Expression[Double]
+  def simplifier(e: Exp): Exp = {
+    @tailrec
+    def loop(acc: Exp): Exp = {
       val simpler = acc.simplify
       if (acc == simpler) simpler
       else loop(simpler)
@@ -22,20 +15,37 @@ object Main {
     loop(e)
   }
 
-  def toExpression(s: String): Expression = {
-    if (s.startsWith("x")) Variable
-    else if (s == "x") Variable
-    else Zero
+  def toExpression(s: String): Exp = {
+    if (s.startsWith("x")) Variable[Double]
+    else if (s == "x") Variable[Double]
+    else Zero[Double]
   }
 
   def main(args: Array[String]) {
-    val ex = new Cosine(Variable)
+    val ex = new Cosine(Variable[Double])
     println(ex.derive.derive)
-    println(simplifier(ex.derive.derive.derive.derive))
+    println(Expression.simplify(ex.derive.derive))
+    
+    println()
+    println()
+    
     val e = toExpression("x * x".replaceAll(" ", ""))
     println(e.toString);
     println(ex.derive.derive.derive)
     println(ex.derive.derive.derive.simplify)
     println(Expression.simplify(ex.derive.derive.derive))
+    
+    println()
+    println()
+    
+    val ex2 = new Multiply(Variable[Int], Add(Constant(2), Variable[Int]))
+    println(ex2)
+    println(ex2.derive)
+    println(ex2.derive.derive)
+    println(ex2.derive.derive.derive)
+    println(Expression.simplify(ex2))
+    println(Expression.simplify(ex2.derive))
+    println(Expression.simplify(ex2.derive.derive))
+    println(Expression.simplify(ex2.derive.derive.derive))
   }
 }
