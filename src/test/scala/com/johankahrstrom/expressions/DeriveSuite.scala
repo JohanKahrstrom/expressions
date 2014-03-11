@@ -19,9 +19,17 @@ class DeriveSuite extends FunSuite {
   test("derived variable is one") {
     assert(Variable[Double].derive === One[Double])
   }
+
+  test("derived sine is cosine") {
+    assert(Expression.simplify(Sine(Variable[Double]).derive) === Cosine(Variable[Double]))
+  }
+
+  test("derived cosine is negative sine") {
+    assert(Expression.simplify(Cosine(Variable[Double]).derive) === Negate(Sine(Variable[Double])))
+  }
   
   test("d/dx x^n = nx^(n-1)") {
-    val exp = new Multiply(Variable[Int], Variable[Int])
+    val exp = Multiply(Variable[Int], Variable[Int])
     assert(Expression.simplify(exp.derive) === Add(Variable[Int], Variable[Int]))
   }
 }

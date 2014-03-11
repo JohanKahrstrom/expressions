@@ -22,11 +22,12 @@ object Expression {
 }
 
 object Constant {
-  def unapply[T](c: T)(implicit n: Numeric[T]): Option[Constant[T]] = Some(new Constant[T](c))
+  def unapply[T](c: Constant[T]): Option[T] = Some(c.evaluate)
   def apply[T](c: T)(implicit n: Numeric[T]): Constant[T] = new Constant[T](c)
 }
 
 class Constant[T](c: T)(implicit n: Numeric[T]) extends Expression[T] {
+  def evaluate: T = c
   def evaluate(x: T) = c
   def evaluate(x: Expression[T]) = this
   def derive = Zero[T]
@@ -34,11 +35,11 @@ class Constant[T](c: T)(implicit n: Numeric[T]) extends Expression[T] {
   override def toString = c.toString
 }
 
-case class Zero[T](implicit n: Numeric[T]) extends Constant[T](n.zero) {
+case class Zero[T]()(implicit n: Numeric[T]) extends Constant[T](n.zero) {
   override def toString = "0"
 }
 
-case class One[T](implicit n: Numeric[T]) extends Constant[T](n.one) {
+case class One[T]()(implicit n: Numeric[T]) extends Constant[T](n.one) {
   override def toString = "1"
 }
 
@@ -71,6 +72,7 @@ case class Add[T](left: Expression[T], right: Expression[T])(implicit n: Numeric
   override def simplify = (left, right) match {
     case (Zero(), expr) => expr.simplify
     case (expr, Zero()) => expr.simplify
+    case (Constant(c1), Constant(c2)) => Constant(n.plus(c1, c2))
     case (left, right) => Add(left.simplify, right.simplify)
   }
 
@@ -83,8 +85,9 @@ case class Multiply[T](left: Expression[T], right: Expression[T])(implicit n: Nu
   def derive = new Add(new Multiply(left.derive, right), new Multiply(left, right.derive))
 
   override def simplify = (left, right) match {
-    case (Zero(), expr) => Zero[T]
-    case (expr, Zero()) => Zero[T]
+    case (Zero(), expr) => Zero()
+    case (expr, Zero()) => Zero()
+    case (Constant(c1), Constant(c2)) => Constant(n.times(c1, c2))
     case (One(), expr) => expr.simplify
     case (expr, One()) => expr.simplify
     case (left, right) => Multiply(left.simplify, right.simplify)
@@ -98,6 +101,7 @@ case class Divide[T](numerator: Expression[T], denominator: Expression[T])(impli
   def derive = new Divide(new Add(new Multiply(numerator.derive, denominator), new Negate(new Multiply(numerator, denominator.derive))), new Multiply(denominator, denominator))
 
   override def simplify = (numerator, denominator) match {
+    case (Zero(), denominator) => Zero()
     case (numerator, One()) => numerator.simplify
     case _ => Divide(numerator.simplify, denominator.simplify)
   }
@@ -107,18 +111,23 @@ case class Divide[T](numerator: Expression[T], denominator: Expression[T])(impli
 
 // From here on, we require T = Double
 
-case class Sine(param: Expression[Double]) extends Expression[Double] {
+abstract class Function[T](param: Expression[T])(implicit n: Numeric[T]) extends Expression[T] {
+  def functionDerivate: Expression[T]
+  def derive = new Multiply[T](functionDerivate, param.derive)
+}
+
+case class Sine(param: Expression[Double]) extends Function[Double](param) {
   def evaluate(x: Double) = Math.sin(param.evaluate(x))
   def evaluate(x: Expression[Double]) = Sine(param.evaluate(x))
-  def derive = new Multiply[Double](new Cosine(param), param.derive)
+  def functionDerivate = new Cosine(param)
 
   override def toString = "sin(" + param + ")"
 }
 
-case class Cosine(param: Expression[Double]) extends Expression[Double] {
+case class Cosine(param: Expression[Double]) extends Function[Double](param) {
   def evaluate(x: Double) = Math.cos(param.evaluate(x))
   def evaluate(x: Expression[Double]) = Cosine(param.evaluate(x))
-  def derive = new Multiply(new Negate(new Sine(param)), param.derive)
+  def functionDerivate = new Negate(new Sine(param))
 
   override def toString = "cos(" + param + ")"
 }
